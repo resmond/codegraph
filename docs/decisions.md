@@ -5,11 +5,73 @@ https://claude.ai/artifact/8WNm9gmPa3hgiYqSdeHymm (2026-11-26).
 Each entry: the decision, then why.
 
 ## 1. Monorepo package layout and dependency rules
-TODO: packages, and which may depend on which.
+TODO: decide. Draft options (Claude, 2026-11-26), none chosen yet:
+
+**Option A — one Python package, internal modules.**
+`src/codegraph/{schema,extract_cpp,extract_py,store,annotations,api,cli}` plus `ui/`.
+Simplest to start; boundaries only by convention (or `import-linter` contracts).
+Risk: modules drift into importing each other; the libclang dependency comes with everything.
+
+**Option B — uv workspace, one package per stage (recommended).**
+```
+packages/
+  schema/          node/edge types, symbol keys (USR), record format   deps: none
+  extract-cpp/     libclang 21 -> fact records (JSONL per TU)          deps: schema
+  extract-py/      Python ast -> fact records                          deps: schema
+  store/           load records into Neo4j, query helpers              deps: schema
+  annotations/     annotation format, re-attach, orphan report         deps: schema, store
+  cli/             `codegraph index|load|annotate|serve`               deps: all of the above
+apps/
+  ui/              talks to the API only, never to Neo4j directly
+```
+Rules: extractors never import `store` (they write files, the loader reads them), so
+parsing (3,692 TUs, the slow part) and loading (iterated often) are rerun independently;
+`schema` imports nothing; the UI goes through the API. Enforced with `import-linter`
+contracts in pre-commit. Cost: more `pyproject.toml` files up front.
+
+**Option C — B, plus a typed web UI.** Same backend layout; `apps/ui` in TypeScript
+with API types generated from the backend's OpenAPI schema. Pick this over B only if the
+UI is a web app of some size; it adds Node to the NUC (not installed now).
+
+Open question for any option: what the UI is (web app, IntelliJ plugin, notebook).
 
 ## 2. Regenerable parsed facts vs human annotations
-TODO: where parsed facts live (rebuilt from source on each index run), where annotations
-live, and how annotations stay attached when parsed facts are regenerated.
+TODO: decide. Draft options (Claude, 2026-11-26), none chosen yet.
+
+Common to all options:
+- **Facts are disposable.** Each index run writes fact records (gitignored cache, e.g.
+  `~/.cache/codegraph/<run>/`) and reloads them; the graph's fact part can be wiped and
+  rebuilt at any time. Start with full rebuilds; incremental per-file loads later if needed.
+- **Annotations attach by a stable key, never by Neo4j node id or file:line.** C++: the
+  libclang USR (stable across rebuilds while the signature stays); Python: the qualified name.
+  Each annotation also stores the last-seen file, line and a snippet hash, so one whose key
+  vanished (renamed or removed symbol) is reported as an orphan with a re-anchor hint,
+  never silently dropped.
+- Neo4j Community has a single user database, so "a second database for annotations" is
+  not available: separation is by label or by a separate store.
+
+**Option A — both in Neo4j, separated by label.**
+Facts: `(:Symbol {usr, …})` etc., tagged with the run id. Annotations: `(:Annotation {key, …})`
+linked by `MATCH … WHERE s.usr = a.key` after each load. Re-index = delete fact labels only.
++ One place to query; UI edits are a single write.
+− Annotations live only in the DB: a careless wipe or a broken migration loses them, so they
+  need their own backups; edits aren't reviewable as diffs.
+
+**Option B — annotations as files in git, loaded into Neo4j as an overlay (recommended).**
+`annotations/` in this repo (YAML or Markdown with front matter), one entry per key.
+After every fact load, the loader creates the `(:Annotation)` overlay from the files.
+The UI writes annotation files through the API; commits are made like any other change.
++ Survives any DB wipe; versioned and reviewable, like the homelab repo; Neo4j holds
+  nothing that can't be rebuilt, so it needs no backups.
+− UI edits become file writes plus commits; two people editing one entry can conflict.
+
+**Option C — separate annotation store (SQLite on the NUC).**
+Facts in Neo4j; annotations in SQLite keyed by symbol key, joined in the API layer.
++ Clean separation; quick UI writes.
+− Graph queries can't see annotations without a sync step; a second store to back up.
+
+Recommendation: B. It keeps Neo4j fully regenerable, which matches deploying it as a
+disposable container on amd-speech, and puts the only irreplaceable data under git.
 
 ## 3. Tool versions (approved 2026-11-26)
 - **Parser:** libclang 21 (system `libclang1-21` 21.1.8, `/usr/lib/llvm-21/lib/libclang-21.so.1`),
