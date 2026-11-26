@@ -10,7 +10,7 @@ Read it before changing structure, dependencies or deployment.
 | Machine | Role | How |
 |---|---|---|
 | NUC (this machine) | Runs the agent session; holds this repo, the FreeCAD build tree, `compile_commands.json`, IntelliJ and the UI | Claude Code in VS Code or tmux, Remote Control on |
-| AMD server (`ssh amd-speech`, 192.168.1.16) | No agent. Also hosts latency-sensitive speech services | Changed only via the deployment repo, applied over SSH from the NUC |
+| AMD server (`ssh amd-speech`, 192.168.1.16) | No agent. Runs Neo4j (Docker); also hosts latency-sensitive speech services | Changed only via the deployment repo, applied over SSH from the NUC |
 
 ## Rules for Claude
 1. Server changes go through the deployment repo, `~/configs/homelab` (its own CLAUDE.md
@@ -28,4 +28,9 @@ Read it before changing structure, dependencies or deployment.
 TODO: monorepo package layout and dependency rules (see decisions.md).
 
 ## Tool versions
-TODO: pinned versions (see decisions.md).
+- libclang 21 (`/usr/lib/llvm-21/lib/libclang-21.so.1`), Python bindings `clang==21.1.*`
+- Python via uv (own env, not FreeCAD's pixi env)
+- Neo4j `neo4j:5.26.34-community` on `amd-speech` (heap 8G, page cache 16G, 6 CPUs, 28g)
+- Index input: `~/src/FreeCAD/build/release/compile_commands.json`
+
+Details and reasons: decisions.md §3–5.

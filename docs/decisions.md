@@ -11,8 +11,14 @@ TODO: packages, and which may depend on which.
 TODO: where parsed facts live (rebuilt from source on each index run), where annotations
 live, and how annotations stay attached when parsed facts are regenerated.
 
-## 3. Tool versions
-TODO: decide. Facts and a proposal are in "Facts gathered" below.
+## 3. Tool versions (approved 2026-11-26)
+- **Parser:** libclang 21 (system `libclang1-21` 21.1.8, `/usr/lib/llvm-21/lib/libclang-21.so.1`),
+  Python bindings `clang==21.1.*`. Index from `~/src/FreeCAD/build/release/compile_commands.json`.
+  Why: matches the clang++ 21.1.8 that produced the compile database, so flags parse as built.
+- **Runtime:** codegraph's own uv-managed Python (3.13 or 3.14), not FreeCAD's pixi env.
+  Why: keeps codegraph independent of FreeCAD's environment updates.
+- **Neo4j:** `neo4j:5.26.34-community` (5.26 LTS; newest patch on Docker Hub 2026-11-24).
+  Why: LTS line; exact tag so upgrades are deliberate commits.
 
 ## 4. Which machine runs what
 - **NUC:** the single agent session, the codegraph repo, FreeCAD build tree,
@@ -21,10 +27,15 @@ TODO: decide. Facts and a proposal are in "Facts gathered" below.
   Why: it hosts latency-sensitive speech services; versioned changes prevent drift.
 - **Later:** a server-side session (`claude --rc` in tmux) once indexing moves to the
   server or a long debugging session is needed.
-- TODO: where Neo4j and the indexer run.
+- **Neo4j:** Docker on `amd-speech`, deployed via `~/configs/homelab`. Why: the server has
+  ~117 GiB free RAM; the NUC has no Docker and ~16 GiB available.
+- **Indexer:** on the NUC, next to the source and build tree, writing to Neo4j over the LAN.
 
-## 5. Neo4j memory and CPU settings
-TODO: decide. Facts and a proposal are in "Facts gathered" below.
+## 5. Neo4j memory and CPU settings (approved 2026-11-26)
+- Heap 8 GB (initial = max), page cache 16 GB.
+- Container limits `cpus: 6`, `mem_limit: 28g`.
+- Why: leaves 10 threads and ~90 GB for speech services and the rest. Starting point:
+  revisit after the first full index, from the store size.
 
 ## 6. Server changes go through the deployment repo
 The deployment repo is `~/configs/homelab`. Edit it, commit, then apply over SSH from the
@@ -33,7 +44,7 @@ drifts from the repo.
 
 ---
 
-## Facts gathered (2026-11-26) — input for 3 and 5, not decisions
+## Facts gathered (2026-11-26) — input for 3–5
 
 ### FreeCAD source (NUC)
 - Tree `~/src/FreeCAD` at `226841e6cd` (weekly-2026.11.26), built with pixi 0.85.0.
@@ -60,7 +71,7 @@ drifts from the repo.
 | Docker | none | 29.1.3, Compose 2.40.3; no Neo4j yet |
 | Other load | interactive desktop | speech (whisper GPU, piper), Ollama, HA, ESPHome, Open WebUI; GPU 2.7/8 GB |
 
-### Proposal (Claude, not approved)
+### Proposal (approved 2026-11-26 with Neo4j 5.26 LTS; now in 3–5 above)
 - **Parser:** libclang 21 to match the compiler that produced `compile_commands.json`;
   Python bindings pinned to the same major (`clang==21.1.*` from PyPI), loaded against
   `/usr/lib/llvm-21/lib/libclang-21.so.1`. Use the `release` build's database.
