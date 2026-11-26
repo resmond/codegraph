@@ -27,6 +27,6 @@ TODO: Neo4j, language runtime(s), parser/clang version, other pinned tools.
 TODO: heap, page cache, CPU limits, and on which host.
 
 ## 6. Server changes go through the deployment repo
-Edit the deployment repo, commit, then apply over SSH from the NUC. Why: every server
-change stays versioned and reviewable, and the server never drifts from the repo.
-TODO: confirm the deployment repo is ~/configs/homelab.
+The deployment repo is `~/configs/homelab`. Edit it, commit, then apply over SSH from the
+NUC. Why: every server change stays versioned and reviewable, and the server never
+drifts from the repo.

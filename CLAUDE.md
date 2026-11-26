@@ -13,9 +13,10 @@ Read it before changing structure, dependencies or deployment.
 | AMD server (`ssh amd-speech`, 192.168.1.16) | No agent. Also hosts latency-sensitive speech services | Changed only via the deployment repo, applied over SSH from the NUC |
 
 ## Rules for Claude
-1. Server changes go through the deployment repo: edit, commit, then apply over SSH
-   (`docker compose up`, checks, logs). Never edit files live on the server.
-   TODO: confirm the deployment repo is `~/configs/homelab` (compose dir `/opt/speech` on the server).
+1. Server changes go through the deployment repo, `~/configs/homelab` (its own CLAUDE.md
+   rules apply there): edit, commit, then apply over SSH with its `scripts/`
+   (`docker compose up`, checks, logs; compose dir `/opt/speech` on the server).
+   Never edit files live on the server.
 2. Never run two independent agents on one working tree; use
    `claude remote-control --spawn worktree` for parallel sessions.
 3. The AMD server shares its GPU/CPU with speech services: check load before heavy jobs there.
