@@ -2,6 +2,7 @@
 name = "codegraph-schema"
 version = "0.0.1"
 description = "Fact record types and schema version."
+license = "LGPL-2.1-or-later"
 requires-python = ">=3.13"
 dependencies = []
 

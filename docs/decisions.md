@@ -21,8 +21,11 @@ Rules: extractors never import `store`; they write files and the loader reads th
 parse and the frequent load run independently. `schema` imports nothing. Why: parsing 3,692 TUs
 takes hours; loading is iterated often. (Options A and C, and the TypeScript UI, are dropped.)
 
-## 2. Regenerable parsed facts vs human annotations
-TODO: decide. Draft options (Claude, 2026-11-26), none chosen yet.
+## 2. Regenerable parsed facts vs human annotations (decided 2026-11-26: option B)
+Facts: JSONL runs under `~/.cache/codegraph/runs/<date>-freecad-<rev>/`, loaded into Neo4j; both
+can be wiped and rebuilt. Annotations: files in this repo's `annotations/`, keyed by stable
+symbol ID, loaded into Neo4j as an overlay after each fact load. Neo4j needs no backups.
+The options considered are kept below for the record.
 
 Common to all options:
 - **Facts are disposable.** Each index run writes fact records (gitignored cache, e.g.
@@ -56,11 +59,13 @@ Facts in Neo4j; annotations in SQLite keyed by symbol key, joined in the API lay
 + Clean separation; quick UI writes.
 − Graph queries can't see annotations without a sync step; a second store to back up.
 
-Recommendation: B. It keeps Neo4j fully regenerable, which matches deploying it as a
+Chosen: B. It keeps Neo4j fully regenerable, which matches deploying it as a
 disposable container on amd-speech, and puts the only irreplaceable data under git.
 
 ## 3. Tool versions (approved 2026-11-26)
-- **Parser:** libclang 21 (system `libclang1-21` 21.1.8, `/usr/lib/llvm-21/lib/libclang-21.so.1`),
+- **Parser (revised after the probe, see status.md):** FreeCAD's pixi libclang 21.1.8
+  (`~/src/FreeCAD/.pixi/envs/default/lib/libclang.so.13`) with its own resource dir; the system
+  `libclang1-21` lacks clang's builtin headers. Originally: libclang 21 (system `libclang1-21` 21.1.8,
   Python bindings `clang==21.1.*`. Index from `~/src/FreeCAD/build/release/compile_commands.json`.
   Why: matches the clang++ 21.1.8 that produced the compile database, so flags parse as built.
 - **Runtime:** codegraph's own uv-managed Python (3.13 or 3.14), not FreeCAD's pixi env.

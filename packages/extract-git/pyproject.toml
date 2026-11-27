@@ -2,6 +2,7 @@
 name = "codegraph-extract-git"
 version = "0.0.1"
 description = "git history extractor: churn, authors, co-change."
+license = "LGPL-2.1-or-later"
 requires-python = ">=3.13"
 dependencies = ["codegraph-schema"]
 

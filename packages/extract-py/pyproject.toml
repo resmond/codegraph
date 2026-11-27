@@ -2,6 +2,7 @@
 name = "codegraph-extract-py"
 version = "0.0.1"
 description = "Python ast extractor: FreeCAD .py -> JSONL fact records."
+license = "LGPL-2.1-or-later"
 requires-python = ">=3.13"
 dependencies = ["codegraph-schema"]
 

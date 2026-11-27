@@ -2,6 +2,7 @@
 name = "codegraph"
 version = "0.0.1"
 description = "Code graph of FreeCAD in Neo4j: extractors, loader, annotations (backend only)."
+license = "LGPL-2.1-or-later"
 requires-python = ">=3.13"
 dependencies = [
     "codegraph-schema",
