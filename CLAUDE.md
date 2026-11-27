@@ -37,6 +37,9 @@ Read it before changing structure, dependencies or deployment.
 | `packages/extract-git` | `cg-extract-git`: churn, authors, co-change -> `git.jsonl` | schema |
 | `packages/store` | `cg-load`: run -> Neo4j (wipes facts, keeps `:Annotation`); graph model in `store/model.py` | schema, neo4j |
 Extractors never import `store`. Long C++ runs: `scripts/overnight-parse.sh`.
+Querying: starter Cypher in `queries/` (`uv run cg-check-queries`); MCP server `codegraph-neo4j`
+(`.mcp.json` -> `scripts/neo4j-mcp.sh`, read-only) lets Claude query the graph. Plan for
+supervised refactoring: `docs/explore-and-refactor.md`.
 
 ## Tool versions
 - libclang 21.1.8 from Ubuntu (`/usr/lib/llvm-21/lib/libclang-21.so.1`, the pixi `clang++`'s

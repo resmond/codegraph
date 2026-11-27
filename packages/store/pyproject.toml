@@ -8,6 +8,7 @@ dependencies = ["codegraph-schema", "neo4j>=6.4,<7"]
 
 [project.scripts]
 cg-load = "codegraph_store.cli:main"
+cg-check-queries = "codegraph_store.check_queries:main"
 
 [tool.uv.sources]
 codegraph-schema = { workspace = true }

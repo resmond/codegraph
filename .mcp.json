@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "codegraph-neo4j": {
+      "type": "stdio",
+      "command": "${HOME}/codegraph/scripts/neo4j-mcp.sh",
+      "args": []
+    }
+  }
+}
