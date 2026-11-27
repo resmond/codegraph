@@ -37,3 +37,14 @@
 - Launch: `scripts/overnight-parse.sh` (systemd user unit `codegraph-parse`, blocks sleep).
 - Known gaps: no `overrides` edges yet (bindings lack overridden-cursor access); per-worker
   header dedup means some header facts repeat — the loader dedupes by (usr, file, line, def).
+
+## Morning list (2026-11-27)
+- [ ] Check the overnight run finished: `tail -3 <run>/progress.log`, `failures.jsonl` empty,
+      errors per TU (expect 0). Delete `<run>-clang23-partial` when no longer needed.
+- [ ] `packages/store`: Neo4j loader for the run — constraints/indexes, dedupe symbols by
+      (usr, file, line, def), stub nodes for external call/type targets, load python.jsonl and
+      git.jsonl, link files to churn and modules.
+- [ ] Test code: the 193 TUs under `tests/` were parsed but mostly skipped, because
+      `is_project_file` only counts `src/` and `build/`. Count `tests/` as project code (flagged
+      as test), re-parse just those (`--match /tests/`, ~10 min), and load "test calls code"
+      edges.
