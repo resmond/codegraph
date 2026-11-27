@@ -4,36 +4,22 @@ Source: planning chat and the plan doc
 https://claude.ai/artifact/8WNm9gmPa3hgiYqSdeHymm (2026-11-26).
 Each entry: the decision, then why.
 
-## 1. Monorepo package layout and dependency rules
-TODO: decide. Draft options (Claude, 2026-11-26), none chosen yet:
-
-**Option A — one Python package, internal modules.**
-`src/codegraph/{schema,extract_cpp,extract_py,store,annotations,api,cli}` plus `ui/`.
-Simplest to start; boundaries only by convention (or `import-linter` contracts).
-Risk: modules drift into importing each other; the libclang dependency comes with everything.
-
-**Option B — uv workspace, one package per stage (recommended).**
+## 1. Monorepo package layout and dependency rules (decided 2026-11-26: option B)
+uv workspace, one package per stage, backend only (the UI is qt-graphkit,
+github.com/resmond/qt-graphkit):
 ```
 packages/
-  schema/          node/edge types, symbol keys (USR), record format   deps: none
-  extract-cpp/     libclang 21 -> fact records (JSONL per TU)          deps: schema
-  extract-py/      Python ast -> fact records                          deps: schema
-  store/           load records into Neo4j, query helpers              deps: schema
-  annotations/     annotation format, re-attach, orphan report         deps: schema, store
-  cli/             `codegraph index|load|annotate|serve`               deps: all of the above
-apps/
-  ui/              talks to the API only, never to Neo4j directly
+  schema/        record types and schema version                      deps: none
+  extract-cpp/   libclang 21 -> fact records (JSONL per TU)           deps: schema
+  extract-py/    Python ast -> fact records                           deps: schema
+  extract-git/   git history -> churn, authors, co-change records     deps: schema
+  store/         load records into Neo4j, query helpers  (next)       deps: schema
+  annotations/   annotation files, re-attach, orphan report (later)   deps: schema, store
+  cli/           `codegraph ...` entry points (later)                 deps: all
 ```
-Rules: extractors never import `store` (they write files, the loader reads them), so
-parsing (3,692 TUs, the slow part) and loading (iterated often) are rerun independently;
-`schema` imports nothing; the UI goes through the API. Enforced with `import-linter`
-contracts in pre-commit. Cost: more `pyproject.toml` files up front.
-
-**Option C — B, plus a typed web UI.** Same backend layout; `apps/ui` in TypeScript
-with API types generated from the backend's OpenAPI schema. Pick this over B only if the
-UI is a web app of some size; it adds Node to the NUC (not installed now).
-
-Open question for any option: what the UI is (web app, IntelliJ plugin, notebook).
+Rules: extractors never import `store`; they write files and the loader reads them, so the slow
+parse and the frequent load run independently. `schema` imports nothing. Why: parsing 3,692 TUs
+takes hours; loading is iterated often. (Options A and C, and the TypeScript UI, are dropped.)
 
 ## 2. Regenerable parsed facts vs human annotations
 TODO: decide. Draft options (Claude, 2026-11-26), none chosen yet.

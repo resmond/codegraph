@@ -22,3 +22,14 @@
   weekly-2026.11.26 (`226841e6cd`).
 - Probe: Document.cpp 12.8 s / 0 errors, TopoShape.cpp 9.9 s / 0, ViewProviderSketch.cpp 19.5 s /
   4 errors (`__builtin_ia32_sqrtss`, x86 intrinsics); peak 1.2 GB per process.
+
+## Overnight extraction (built 2026-11-26)
+- Workspace per decision §1 option B: `packages/schema`, `extract-cpp`, `extract-py`, `extract-git`.
+- C++: 3,692 compile entries; 1,525 skipped as not FreeCAD code (src/3rdParty, qrc_*, moc_*),
+  about 2,167 parsed. Test on the 24 largest: 7-51 s each, 1.7 min on 6 workers, 0 failures.
+  Remaining parse errors are clang's own SIMD headers (`__builtin_ia32_*`), not FreeCAD code.
+- Output: `~/.cache/codegraph/runs/<date>-freecad-<rev>/` with `tus/*.jsonl` (one per TU),
+  `python.jsonl`, `git.jsonl`, `progress.log`, `failures.jsonl`, `runs.jsonl`.
+- Launch: `scripts/overnight-parse.sh` (systemd user unit `codegraph-parse`, blocks sleep).
+- Known gaps: no `overrides` edges yet (bindings lack overridden-cursor access); per-worker
+  header dedup means some header facts repeat — the loader dedupes by (usr, file, line, def).

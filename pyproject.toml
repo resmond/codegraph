@@ -1,0 +1,33 @@
+[project]
+name = "codegraph"
+version = "0.0.1"
+description = "Code graph of FreeCAD in Neo4j: extractors, loader, annotations (backend only)."
+requires-python = ">=3.13"
+dependencies = [
+    "codegraph-schema",
+    "codegraph-extract-cpp",
+    "codegraph-extract-py",
+    "codegraph-extract-git",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+codegraph-schema = { workspace = true }
+codegraph-extract-cpp = { workspace = true }
+codegraph-extract-py = { workspace = true }
+codegraph-extract-git = { workspace = true }
+
+[dependency-groups]
+dev = ["ruff>=0.11", "pytest>=8"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

@@ -1,0 +1,19 @@
+[project]
+name = "codegraph-extract-py"
+version = "0.0.1"
+description = "Python ast extractor: FreeCAD .py -> JSONL fact records."
+requires-python = ">=3.13"
+dependencies = ["codegraph-schema"]
+
+[project.scripts]
+cg-extract-py = "codegraph_extract_py:main"
+
+[tool.uv.sources]
+codegraph-schema = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "codegraph_extract_py"
