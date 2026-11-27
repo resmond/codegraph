@@ -138,6 +138,7 @@ def test_files_modules_git(tmp_path):
     t = g.files["tests/src/App/T.cpp"]
     assert t["test"] and t["module"] == "tests" and t["errors"] == 1
     assert g.notes["tu_errors"] == 1
+    assert "test" not in g.symbols["f"]
     assert g.rels["CO_CHANGED"] == [{"a": "src/App/Doc.cpp", "b": "src/App/Doc.h", "n": 4}]
 
 

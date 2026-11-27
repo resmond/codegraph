@@ -96,10 +96,13 @@ class Toolchain:
         return libv, ccv
 
     def is_project_file(self, path: str) -> bool:
-        """FreeCAD's own code: src/ (minus vendored 3rdParty) and generated files in build/."""
+        """FreeCAD's own code: src/ (minus vendored 3rdParty), its unit tests in tests/ (the
+        loader flags them as test code) and generated files in build/."""
         src = str(self.freecad / "src") + "/"
         if path.startswith(src):
             return not path.startswith(src + "3rdParty/")
+        if path.startswith(str(self.freecad / "tests") + "/"):
+            return "/3rdParty/" not in path
         return path.startswith(str(self.build) + "/") and "/3rdParty/" not in path
 
     def skip_tu(self, path: str) -> bool:

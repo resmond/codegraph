@@ -44,7 +44,7 @@
 - [x] `packages/store`: Neo4j loader for the run — constraints/indexes, dedupe symbols by
       (usr, file, line, def), stub nodes for external call/type targets, load python.jsonl and
       git.jsonl, link files to churn and modules.
-- [ ] Test code: the 193 TUs under `tests/` were parsed but mostly skipped, because
+- [x] Test code: the 193 TUs under `tests/` were parsed but mostly skipped, because
       `is_project_file` only counts `src/` and `build/`. Count `tests/` as project code (flagged
       as test), re-parse just those (`--match /tests/`, ~10 min), and load "test calls code"
       edges.
@@ -52,7 +52,7 @@
 ## Overnight run result and first load (2026-11-26, 21:55-22:30)
 - Run `2026-11-26-freecad-226841e6cd`: 2,167 TUs in 1.04 h, 0 failed; 1 TU with a diagnostic
   (`src/Base/PyTools.c`: "argument unused: -nostdinc++", harmless; C TUs should drop that flag).
-  3.23 M records, 794 MB. The clang-23 partial and test runs are to be deleted.
+  3.23 M records, 794 MB. The clang-23 partial and test runs were deleted.
 - `uv run cg-load --run <run>` (`--dry-run` first): builds the graph in 30 s / 1.1 GB, loads in
   48 s. Loaded: 113,491 symbols (+43,675 external stubs), 14,525 files, 141 modules,
   28,443 Python nodes; 394,496 CALLS, 222,869 USES_TYPE, 4,543 INHERITS, 32,160 INCLUDES,
@@ -62,3 +62,14 @@
 - Known gaps: File nodes include git-only paths (deleted files, docs) - no `exists` flag yet;
   Python `bases` are a property, not INHERITS edges; no `overrides` edges; `test` is a path
   heuristic (`tests/`, `/Test`). Test TUs are still the next item below.
+
+## Test code (2026-11-26, 22:05)
+- `is_project_file` now counts `tests/` (GoogleTest comes from the pixi env, so stays external).
+  The 193 test TUs were re-parsed into the same run (`--match /tests/`, 5 min, 0 failed, 0
+  errors); the old outputs are in `<run>/superseded/tests-pre-fix/` (not loaded).
+- Symbols under `tests/` carry `test: true`. Reload: 135,203 symbols (21,715 test), 434,085 CALLS.
+- Tests call 1,672 distinct FreeCAD functions directly (7,752 edges). Direct share of defined
+  functions per module: Base 15%, App 7%, Points 7%, Material 5%, Part 2.5%, Gui 1%,
+  Sketcher 1%, TechDraw 0.1%.
+- Limits: only direct calls (no transitive reach yet), and only the C++ GoogleTest suite;
+  FreeCAD's Python tests (`Test*.py` in src/Mod, run by FreeCAD itself) aren't linked to C++.

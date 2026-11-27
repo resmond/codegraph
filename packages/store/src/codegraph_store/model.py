@@ -160,6 +160,8 @@ def read_cpp(g: Graph, run: Path) -> None:
         s["label"] = KIND_LABEL.get(r["kind"], "Other")
         if "flags" in r:
             s["flags"] = r["flags"]
+        if s["file"].startswith("tests/"):
+            s["test"] = True
         if len(locs[usr]) > 1:
             s["locs"] = sorted(locs[usr])
         if usr in metric:
