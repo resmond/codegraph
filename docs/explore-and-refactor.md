@@ -22,7 +22,7 @@ edits to FreeCAD, one at a time, with the human deciding at each step.
 | Tool | Use | Status |
 |---|---|---|
 | Neo4j Browser, http://192.168.1.16:7474 | Ad-hoc Cypher, expanding nodes; starter queries in `queries/starter/` | In use |
-| Official Neo4j MCP server (github.com/neo4j/mcp, GPL-3.0), read-only | Claude queries the graph during sessions (impact, callers, hierarchy) | Set up: `.mcp.json` + `scripts/neo4j-mcp.sh`; needs APOC on the server |
+| Official Neo4j MCP server (github.com/neo4j/mcp, GPL-3.0), read-only | Claude queries the graph during sessions (impact, callers, hierarchy) | Working: `.mcp.json` + `scripts/neo4j-mcp.sh` (APOC deployed 2026-11-27) |
 | Sourcetrail community fork (github.com/petermost/Sourcetrail, GPL-3.0) | Interactive C++ navigation of FreeCAD from `compile_commands.json`, next to the source | To try |
 | NeoDash Labs (Apache-2.0, best-effort maintenance) | Saved dashboards: hotspots, coupling, test reach | To try |
 | Bloom / Explore | Point-and-click exploration | Skipped: not free on Community Edition locally |
@@ -55,8 +55,9 @@ Exploring (now):
       `uv run cg-check-queries` (2026-11-27: 16/16 return rows)
 - [x] Official Neo4j MCP server v2.1.2, read-only, telemetry off: `scripts/neo4j-mcp.sh`,
       `.mcp.json` (project server `codegraph-neo4j`)
-- [ ] Enable APOC Core on the server: homelab `./scripts/deploy-codegraph.sh` (committed d215072);
-      then `scripts/neo4j-mcp.sh --check` must list the tools
+- [x] Enable APOC Core on the server (homelab d215072, deployed 2026-11-27): `--check` gives
+      `neo4j-mcp 2.1.2`, tools `get-schema`, `read-cypher` (no write tool). A logged
+      `gds.version` error is the optional GDS probe: harmless.
 - [ ] Approve the `codegraph-neo4j` MCP server in a Claude Code session started in ~/codegraph
 - [ ] Try the Sourcetrail fork on FreeCAD's `compile_commands.json`
 - [ ] Try NeoDash Labs with a hotspot / coupling / test-reach dashboard (read-only DB user;

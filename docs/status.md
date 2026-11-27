@@ -76,5 +76,5 @@
 
 ## Exploring and supervised refactoring (2026-11-27)
 Plan and to-do list: `docs/explore-and-refactor.md`. Done: starter queries (`queries/`, checked
-by `cg-check-queries`), official Neo4j MCP server (read-only) via `.mcp.json`. Waiting: APOC on
-the server (homelab `deploy-codegraph.sh`).
+by `cg-check-queries`), official Neo4j MCP server (read-only) via `.mcp.json`. APOC deployed; the
+MCP server answers with `get-schema` and `read-cypher`.
