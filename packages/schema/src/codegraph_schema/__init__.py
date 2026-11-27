@@ -20,7 +20,27 @@ from typing import IO, Any
 
 SCHEMA_VERSION = "0.1"
 
-__all__ = ["SCHEMA_VERSION", "JsonlWriter", "dumps"]
+__all__ = ["SCHEMA_VERSION", "JsonlWriter", "dumps", "module_of"]
+
+
+def module_of(rel: str) -> str:
+    """Workbench or top-level area of a path relative to the FreeCAD checkout.
+
+    src/Mod/Part/... -> Mod/Part, src/App/... -> App, build/.../src/Gui/... -> Gui,
+    tests/... -> tests.
+    """
+    parts = rel.split("/")
+    if parts[:2] == ["src", "Mod"] and len(parts) > 2:
+        return "Mod/" + parts[2]
+    if parts[0] == "src" and len(parts) > 1:
+        return parts[1]
+    if parts[0] == "build":
+        try:
+            i = parts.index("src")
+            return module_of("/".join(parts[i:]))
+        except ValueError:
+            return "build"
+    return parts[0]
 
 
 def dumps(record: dict[str, Any]) -> str:

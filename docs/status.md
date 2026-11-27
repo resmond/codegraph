@@ -39,12 +39,26 @@
   header dedup means some header facts repeat — the loader dedupes by (usr, file, line, def).
 
 ## Morning list (2026-11-27)
-- [ ] Check the overnight run finished: `tail -3 <run>/progress.log`, `failures.jsonl` empty,
+- [x] Check the overnight run finished: `tail -3 <run>/progress.log`, `failures.jsonl` empty,
       errors per TU (expect 0). Delete `<run>-clang23-partial` when no longer needed.
-- [ ] `packages/store`: Neo4j loader for the run — constraints/indexes, dedupe symbols by
+- [x] `packages/store`: Neo4j loader for the run — constraints/indexes, dedupe symbols by
       (usr, file, line, def), stub nodes for external call/type targets, load python.jsonl and
       git.jsonl, link files to churn and modules.
 - [ ] Test code: the 193 TUs under `tests/` were parsed but mostly skipped, because
       `is_project_file` only counts `src/` and `build/`. Count `tests/` as project code (flagged
       as test), re-parse just those (`--match /tests/`, ~10 min), and load "test calls code"
       edges.
+
+## Overnight run result and first load (2026-11-26, 21:55-22:30)
+- Run `2026-11-26-freecad-226841e6cd`: 2,167 TUs in 1.04 h, 0 failed; 1 TU with a diagnostic
+  (`src/Base/PyTools.c`: "argument unused: -nostdinc++", harmless; C TUs should drop that flag).
+  3.23 M records, 794 MB. The clang-23 partial and test runs are to be deleted.
+- `uv run cg-load --run <run>` (`--dry-run` first): builds the graph in 30 s / 1.1 GB, loads in
+  48 s. Loaded: 113,491 symbols (+43,675 external stubs), 14,525 files, 141 modules,
+  28,443 Python nodes; 394,496 CALLS, 222,869 USES_TYPE, 4,543 INHERITS, 32,160 INCLUDES,
+  28,569 CO_CHANGED, 10,635 IMPORTS. Database counts match the model.
+- Sanity: 311 classes derive from App::DocumentObject; Sketcher->Part is the largest
+  cross-workbench call flow (1,330 edges).
+- Known gaps: File nodes include git-only paths (deleted files, docs) - no `exists` flag yet;
+  Python `bases` are a property, not INHERITS edges; no `overrides` edges; `test` is a path
+  heuristic (`tests/`, `/Test`). Test TUs are still the next item below.

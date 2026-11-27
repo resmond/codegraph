@@ -12,7 +12,7 @@ from collections import Counter
 from pathlib import Path
 
 import clang.cindex as ci
-from codegraph_schema import JsonlWriter
+from codegraph_schema import JsonlWriter, module_of
 
 from .toolchain import Toolchain
 
@@ -125,7 +125,7 @@ class TuExtractor:
                 {
                     "t": "tu",
                     "file": self.tc.rel(main),
-                    "module": _module(self.tc.rel(main)),
+                    "module": module_of(self.tc.rel(main)),
                     "parse_s": round(parse_s, 2),
                     "walk_s": round(walk_s, 2),
                     "errors": len(diags),
@@ -298,18 +298,3 @@ class _FinishFunction:
     def kind(self):
         return K.UNEXPOSED_DECL
 
-
-def _module(rel: str) -> str:
-    """Workbench or top-level area: src/Mod/Part/... -> Mod/Part, src/App/... -> App."""
-    parts = rel.split("/")
-    if parts[:2] == ["src", "Mod"] and len(parts) > 2:
-        return "Mod/" + parts[2]
-    if parts[0] == "src" and len(parts) > 1:
-        return parts[1]
-    if parts[0] == "build":
-        try:
-            i = parts.index("src")
-            return _module("/".join(parts[i:]))
-        except ValueError:
-            return "build"
-    return parts[0]

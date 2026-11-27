@@ -35,12 +35,14 @@ Read it before changing structure, dependencies or deployment.
 | `packages/extract-cpp` | `cg-extract-cpp`: libclang -> `tus/*.jsonl`, parallel + resumable | schema |
 | `packages/extract-py` | `cg-extract-py`: Python ast -> `python.jsonl` | schema |
 | `packages/extract-git` | `cg-extract-git`: churn, authors, co-change -> `git.jsonl` | schema |
-| `packages/store` (next) | load runs into Neo4j | schema |
+| `packages/store` | `cg-load`: run -> Neo4j (wipes facts, keeps `:Annotation`); graph model in `store/model.py` | schema, neo4j |
 Extractors never import `store`. Long C++ runs: `scripts/overnight-parse.sh`.
 
 ## Tool versions
-- libclang 21.1.8 from FreeCAD's pixi env (`.pixi/envs/default/lib/libclang.so.13`), Python
-  bindings `clang==21.1.7`; include setup in `extract-cpp/toolchain.py`
+- libclang 21.1.8 from Ubuntu (`/usr/lib/llvm-21/lib/libclang-21.so.1`, the pixi `clang++`'s
+  exact version; not the pixi `libclang.so.13`, which is clang 23), Python bindings
+  `clang==21.1.7`; include setup in `extract-cpp/toolchain.py`
+- Neo4j Python driver `neo4j` 6.4 (`store`); password read over SSH from the server's `.env`
 - Python via uv (own env, not FreeCAD's pixi env)
 - Neo4j `neo4j:5.26.34-community` on `amd-speech` (heap 8G, page cache 16G, 6 CPUs, 28g)
 - Index input: `~/src/FreeCAD/build/release/compile_commands.json`

@@ -9,6 +9,7 @@ dependencies = [
     "codegraph-extract-cpp",
     "codegraph-extract-py",
     "codegraph-extract-git",
+    "codegraph-store",
 ]
 
 [tool.uv]
@@ -22,6 +23,7 @@ codegraph-schema = { workspace = true }
 codegraph-extract-cpp = { workspace = true }
 codegraph-extract-py = { workspace = true }
 codegraph-extract-git = { workspace = true }
+codegraph-store = { workspace = true }
 
 [dependency-groups]
 dev = ["ruff>=0.11", "pytest>=8"]
