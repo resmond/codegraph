@@ -63,9 +63,12 @@ Chosen: B. It keeps Neo4j fully regenerable, which matches deploying it as a
 disposable container on amd-speech, and puts the only irreplaceable data under git.
 
 ## 3. Tool versions (approved 2026-11-26)
-- **Parser (revised after the probe, see status.md):** FreeCAD's pixi libclang 21.1.8
-  (`~/src/FreeCAD/.pixi/envs/default/lib/libclang.so.13`) with its own resource dir; the system
-  `libclang1-21` lacks clang's builtin headers. Originally: libclang 21 (system `libclang1-21` 21.1.8,
+- **Parser (final, 2026-11-26 evening):** Ubuntu's libclang 21.1.8
+  (`/usr/lib/llvm-21/lib/libclang-21.so.1`), the exact version of FreeCAD's pixi `clang++`,
+  with the pixi compiler's resource dir and include list (the system package has no builtin
+  headers). Not the pixi `libclang.so.13`: that is clang 23.1.4 (conda `libclang13`), which
+  broke on clang 21's SIMD headers and cut 8+ TUs short. The runner refuses a version mismatch.
+  Originally: libclang 21 (system `libclang1-21` 21.1.8,
   Python bindings `clang==21.1.*`. Index from `~/src/FreeCAD/build/release/compile_commands.json`.
   Why: matches the clang++ 21.1.8 that produced the compile database, so flags parse as built.
 - **Runtime:** codegraph's own uv-managed Python (3.13 or 3.14), not FreeCAD's pixi env.

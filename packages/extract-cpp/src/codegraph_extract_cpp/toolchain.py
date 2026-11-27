@@ -1,7 +1,12 @@
-"""FreeCAD's own pixi toolchain for libclang: exact compiler match (docs/status.md).
+"""libclang setup that exactly matches the compiler FreeCAD was built with (docs/status.md).
 
-libclang ignores the conda compiler's ``.cfg`` include setup, so we pass ``-nostdinc
--nostdinc++`` and then ``-isystem`` for every path the real ``clang++`` searches.
+- Library: Ubuntu's libclang 21.1.8 (``libclang-21.so.1``), the same version as FreeCAD's pixi
+  ``clang++``. The pixi env's own ``libclang.so.13`` is clang 23 (conda ``libclang13``); with
+  clang 21's builtin headers it fails on x86 SIMD built-ins and truncates TUs at 20 errors.
+- Headers: the pixi compiler's resource dir and include search list. libclang ignores the conda
+  compiler's ``.cfg`` include setup, so we pass ``-nostdinc -nostdinc++`` and then ``-isystem``
+  for every path the real ``clang++`` searches.
+- ``-ferror-limit=0``: never stop a TU early; errors are counted in the ``tu`` record instead.
 """
 
 from __future__ import annotations
@@ -22,9 +27,11 @@ class Toolchain:
     def env(self) -> Path:
         return self.freecad / ".pixi" / "envs" / "default"
 
+    libclang_path: Path = Path("/usr/lib/llvm-21/lib/libclang-21.so.1")
+
     @property
     def libclang(self) -> Path:
-        return self.env / "lib" / "libclang.so.13"
+        return self.libclang_path
 
     @property
     def clangxx(self) -> Path:
@@ -54,10 +61,39 @@ class Toolchain:
             text=True,
         ).stderr
         inc = out.split("#include <...> search starts here:")[1].split("End of search list.")[0]
-        args = ["-nostdinc", "-nostdinc++", "-resource-dir", str(self.resource_dir)]
+        args = [
+            "-ferror-limit=0",
+            "-nostdinc",
+            "-nostdinc++",
+            "-resource-dir",
+            str(self.resource_dir),
+        ]
         for d in inc.split():
             args += ["-isystem", d]
         return args
+
+    def check_versions(self) -> tuple[str, str]:
+        """Return (libclang version, compiler version); raise if their x.y.z differ."""
+        import re
+
+        import clang.cindex as ci
+
+        ci.Config.set_library_file(str(self.libclang))
+        lib = ci.conf.lib
+        lib.clang_getClangVersion.restype = ci._CXString
+        libv = ci._CXString.from_result(lib.clang_getClangVersion())
+        ccv = self.version()
+
+        def ver(text: str) -> str:
+            m = re.search(r"clang version (\d+\.\d+\.\d+)", text)
+            return m.group(1) if m else "?"
+
+        if ver(libv) != ver(ccv) or ver(libv) == "?":
+            raise RuntimeError(
+                f"libclang {ver(libv)} ({self.libclang}) does not match the compiler {ver(ccv)} "
+                f"({self.clangxx}); results would be unreliable."
+            )
+        return libv, ccv
 
     def is_project_file(self, path: str) -> bool:
         """FreeCAD's own code: src/ (minus vendored 3rdParty) and generated files in build/."""

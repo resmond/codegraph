@@ -90,6 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     jobs = [(e, str(tus_dir / _out_name(tc, e["file"]))) for e in entries]
     todo = [j for j in jobs if not Path(j[1]).exists()]
 
+    libv, ccv = tc.check_versions()  # refuses to run on a libclang/compiler mismatch
     rev = subprocess.run(
         ["git", "-C", str(tc.freecad), "describe", "--tags", "--always"],
         capture_output=True,
@@ -101,7 +102,7 @@ def main(argv: list[str] | None = None) -> int:
         "schema": SCHEMA_VERSION,
         "freecad_rev": rev,
         "compiler": tc.version(),
-        "libclang": str(tc.libclang),
+        "libclang": f"{tc.libclang} ({libv})",
         "started": datetime.now(UTC).isoformat(timespec="seconds"),
         "tus_total": len(jobs),
         "tus_todo": len(todo),
