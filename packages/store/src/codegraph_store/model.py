@@ -12,8 +12,9 @@ Graph model (schema 0.1):
 
   (Module)-[:CONTAINS]->(File)          (File)-[:INCLUDES]->(File)
   (Symbol)-[:DECLARED_IN]->(File)       (Symbol)-[:CONTAINS]->(Symbol)   parent -> member
-  (Symbol)-[:CALLS {n}]->(Symbol)       (Symbol)-[:USES_TYPE]->(Symbol)
-  (Symbol)-[:INHERITS {access}]->(Symbol)
+  (Symbol)-[:CALLS {n, sites}]->(Symbol)   sites: "file:line:col" of each call (schema 0.2)
+  (Symbol)-[:USES_TYPE]->(Symbol)       (Symbol)-[:INHERITS {access}]->(Symbol)
+  (Symbol)-[:OVERRIDES]->(Symbol)       method -> base method it directly overrides (0.2)
   (File)-[:CO_CHANGED {n}]->(File)      git co-change, a < b
   (PyModule|PyClass)-[:CONTAINS]->(PyClass|PyFunc)   (PyModule)-[:DECLARED_IN]->(File)
   (PyModule)-[:IMPORTS {names, how}]->(PyModule|PyExternal)
@@ -21,7 +22,8 @@ Graph model (schema 0.1):
 Dedup: a C++ symbol repeats once per worker that walked its header; one node per USR. Its
 location is the definition if there is one (else the first declaration, by path), and
 ``locs`` lists every distinct file:line. Edges dedupe on (kind, src, dst); ``calls.n`` is
-the maximum over TUs (the same body walked twice reports the same count).
+the maximum over TUs (the same body walked twice reports the same count) and ``calls.sites``
+the union of positions (capped at MAX_SITES).
 """
 
 from __future__ import annotations
@@ -54,6 +56,7 @@ KIND_LABEL = {
     "ENUM_DECL": "Enum",
 }
 CPP_SUFFIXES = (".cpp", ".cxx", ".cc", ".c", ".h", ".hpp", ".hxx", ".inl")
+MAX_SITES = 200
 SYM_PROPS = ("kind", "name", "qname", "file", "line", "end", "def", "access", "sig", "type")
 
 
@@ -144,6 +147,8 @@ def read_cpp(g: Graph, run: Path) -> None:
                         edges[key] = r
                     elif k == "calls":
                         e["n"] = max(e["n"], r["n"])
+                        if r.get("sites"):
+                            e["sites"] = list(dict.fromkeys([*e.get("sites", []), *r["sites"]]))
                 elif t == "metric":
                     m = metric.get(r["usr"])
                     if m is None or r["lines"] > m["lines"]:
@@ -177,7 +182,12 @@ def read_cpp(g: Graph, run: Path) -> None:
         else:
             g.notes["parent_not_project"] += 1
 
-    rel_type = {"calls": "CALLS", "uses_type": "USES_TYPE", "inherits": "INHERITS"}
+    rel_type = {
+        "calls": "CALLS",
+        "uses_type": "USES_TYPE",
+        "inherits": "INHERITS",
+        "overrides": "OVERRIDES",
+    }
     for (k, src, dst), r in edges.items():
         if src not in g.symbols:
             g.notes[f"{k}_src_missing"] += 1
@@ -187,6 +197,8 @@ def read_cpp(g: Graph, run: Path) -> None:
         row: dict[str, Any] = {"a": src, "b": dst}
         if k == "calls":
             row["n"] = r["n"]
+            if r.get("sites"):
+                row["sites"] = sorted(r["sites"])[:MAX_SITES]
         elif k == "inherits":
             row["access"] = r.get("access", "")
         g.rels[rel_type[k]].append(row)

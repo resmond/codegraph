@@ -7,8 +7,9 @@ this worker process already walked are skipped too; the loader dedupes across wo
 
 from __future__ import annotations
 
+import ctypes
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import clang.cindex as ci
@@ -70,6 +71,41 @@ def _qname(c: ci.Cursor) -> str:
             parts.append(p.spelling)
         p = p.semantic_parent
     return "::".join(reversed(parts))
+
+
+MAX_SITES = 200  # call positions kept per (caller, callee) edge; ``n`` still counts all calls
+_OVR: dict = {}
+
+
+def _overridden(c: ci.Cursor) -> list[tuple[str, str]]:
+    """(usr, qname) of the methods ``c`` directly overrides, via libclang's
+    clang_getOverriddenCursors (not wrapped by the Python bindings)."""
+    if not _OVR:
+        lib = ci.conf.lib
+        get, dispose = lib.clang_getOverriddenCursors, lib.clang_disposeOverriddenCursors
+        get.argtypes = [
+            ci.Cursor,
+            ctypes.POINTER(ctypes.POINTER(ci.Cursor)),
+            ctypes.POINTER(ctypes.c_uint),
+        ]
+        get.restype = None
+        dispose.argtypes = [ctypes.POINTER(ci.Cursor)]
+        dispose.restype = None
+        _OVR["get"], _OVR["dispose"] = get, dispose
+    arr, n = ctypes.POINTER(ci.Cursor)(), ctypes.c_uint(0)
+    _OVR["get"](c, ctypes.byref(arr), ctypes.byref(n))
+    out = []
+    try:
+        for i in range(n.value):
+            o = arr[i]
+            o._tu = c._tu  # the bindings need it for follow-up calls (semantic_parent)
+            usr = o.get_usr()
+            if usr:
+                out.append((usr, _qname(o)))
+    finally:
+        if n.value:
+            _OVR["dispose"](arr)
+    return out
 
 
 class TuExtractor:
@@ -160,7 +196,12 @@ class TuExtractor:
             if kind in SYMBOL_KINDS and not (kind == K.VAR_DECL and ctx is not None):
                 usr = self._symbol(c, kind, cls)
                 if kind in FUNCTION_KINDS and c.is_definition():
-                    fctx = {"usr": usr, "calls": Counter(), "types": set(), "cc": 1}
+                    fctx = {
+                        "usr": usr,
+                        "calls": defaultdict(list),  # (dst usr, dst qname) -> call sites
+                        "types": set(),
+                        "cc": 1,
+                    }
                     # LIFO: the marker goes first so it pops after the whole body.
                     stack.append((_FinishFunction(fctx, c), None, None))
                     self._push_children(stack, c, fctx, cls)
@@ -192,7 +233,10 @@ class TuExtractor:
                     if ref is not None:
                         rusr = ref.get_usr()
                         if rusr:
-                            ctx["calls"][(rusr, _qname(ref))] += 1
+                            loc = c.location
+                            f = loc.file
+                            site = f"{self.tc.rel(f.name) if f else '?'}:{loc.line}:{loc.column}"
+                            ctx["calls"][(rusr, _qname(ref))].append(site)
                 elif kind == K.TYPE_REF:
                     ref = c.referenced
                     if ref is not None and ref.get_usr():
@@ -252,6 +296,11 @@ class TuExtractor:
                     flags.append("const")
                 if flags:
                     rec["flags"] = flags
+                if c.is_virtual_method():
+                    for dst, dname in _overridden(c):
+                        rec_o = {"t": "edge", "k": "overrides", "src": usr, "dst": dst}
+                        self.w.write(rec_o | {"dst_name": dname})
+                        self.counts["overrides"] += 1
         elif kind in (K.FIELD_DECL, K.VAR_DECL, K.TYPEDEF_DECL, K.TYPE_ALIAS_DECL):
             rec["type"] = c.type.spelling
         self.w.write(rec)
@@ -268,7 +317,7 @@ class TuExtractor:
                 "cc": ctx["cc"],
             }
         )
-        for (dst, dname), n in ctx["calls"].items():
+        for (dst, dname), sites in ctx["calls"].items():
             self.w.write(
                 {
                     "t": "edge",
@@ -276,7 +325,8 @@ class TuExtractor:
                     "src": ctx["usr"],
                     "dst": dst,
                     "dst_name": dname,
-                    "n": n,
+                    "n": len(sites),
+                    "sites": list(dict.fromkeys(sites))[:MAX_SITES],  # file:line:col, unique
                 }
             )
         self.counts["calls"] += len(ctx["calls"])
@@ -297,4 +347,3 @@ class _FinishFunction:
     @property
     def kind(self):
         return K.UNEXPOSED_DECL
-

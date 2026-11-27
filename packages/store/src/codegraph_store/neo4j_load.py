@@ -42,6 +42,7 @@ REL_SPECS = {
     "CALLS": ("CALLS", "(a:Symbol {usr: r.a})", "(b:Symbol {usr: r.b})"),
     "USES_TYPE": ("USES_TYPE", "(a:Symbol {usr: r.a})", "(b:Symbol {usr: r.b})"),
     "INHERITS": ("INHERITS", "(a:Symbol {usr: r.a})", "(b:Symbol {usr: r.b})"),
+    "OVERRIDES": ("OVERRIDES", "(a:Symbol {usr: r.a})", "(b:Symbol {usr: r.b})"),
     "INCLUDES": ("INCLUDES", "(a:File {path: r.a})", "(b:File {path: r.b})"),
     "CO_CHANGED": ("CO_CHANGED", "(a:File {path: r.a})", "(b:File {path: r.b})"),
     "PY_DECLARED_IN": ("DECLARED_IN", "(a:PyModule {id: r.a})", "(b:File {path: r.b})"),
@@ -50,7 +51,7 @@ REL_SPECS = {
     "IMPORTS": ("IMPORTS", "(a:{la} {{id: r.a}})", "(b:{lb} {{id: r.b}})"),
 }
 REL_PROPS = {
-    "CALLS": ["n"],
+    "CALLS": ["n", "sites"],
     "INHERITS": ["access"],
     "CO_CHANGED": ["n"],
     "IMPORTS": ["how", "names"],

@@ -3,11 +3,13 @@
 Every output file is JSON Lines; each line is one record with a type key ``t``.
 Records are regenerable facts (decision §2): they can be deleted and rebuilt at any time.
 
-Record types (schema 0.1):
+Record types (schema 0.2):
   run       one per run: tool, versions, source revision, start time, settings
   tu        one per C++ translation unit: parse time, diagnostics, counts
   sym       a declaration or definition: usr, kind, name, qname, file, line range, flags
-  edge      k = contains | inherits | calls | uses_type | includes | imports
+  edge      k = contains | inherits | calls | uses_type | includes | imports | overrides
+            calls: n (call count) and sites (unique "file:line:col" of each call, max 200)
+            overrides: method -> the base-class method it directly overrides (0.2)
   pymod / pyclass / pyfunc   Python module, class, function
   churn     per-file git statistics; cochange: file pair changed together
 """
@@ -18,7 +20,7 @@ import json
 from pathlib import Path
 from typing import IO, Any
 
-SCHEMA_VERSION = "0.1"
+SCHEMA_VERSION = "0.2"
 
 __all__ = ["SCHEMA_VERSION", "JsonlWriter", "dumps", "module_of"]
 

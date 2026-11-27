@@ -36,7 +36,16 @@ def make_run(tmp: Path) -> Path:
             _sym("f", "src/App/Doc.h", 12, False, parent="C"),
             _sym("f", "src/App/Doc.cpp", 40, True, parent="C"),
             {"t": "metric", "usr": "f", "lines": 6, "cc": 3},
-            {"t": "edge", "k": "calls", "src": "f", "dst": "ext::g", "dst_name": "std::g", "n": 2},
+            {
+                "t": "edge",
+                "k": "calls",
+                "src": "f",
+                "dst": "ext::g",
+                "dst_name": "std::g",
+                "n": 2,
+                "sites": ["src/App/Doc.cpp:41:5", "src/App/Doc.cpp:42:5"],
+            },
+            {"t": "edge", "k": "overrides", "src": "f", "dst": "Base::f", "dst_name": "B::f"},
             {
                 "t": "edge",
                 "k": "inherits",
@@ -54,7 +63,16 @@ def make_run(tmp: Path) -> Path:
         [
             _sym("C", "src/App/Doc.h", 10, True, kind="CLASS_DECL"),
             _sym("f", "src/App/Doc.h", 12, False, parent="C"),
-            {"t": "edge", "k": "calls", "src": "f", "dst": "ext::g", "dst_name": "std::g", "n": 3},
+            {
+                "t": "edge",
+                "k": "calls",
+                "src": "f",
+                "dst": "ext::g",
+                "dst_name": "std::g",
+                "n": 3,
+                "sites": ["src/App/Doc.cpp:42:5", "src/App/Doc.cpp:43:9"],
+            },
+            {"t": "edge", "k": "overrides", "src": "f", "dst": "Base::f", "dst_name": "B::f"},
             {"t": "edge", "k": "includes", "src": "src/App/Doc.cpp", "dst": "src/App/Doc.h"},
             {"t": "tu", "file": "tests/src/App/T.cpp", "errors": 1, "parse_s": 1.0},
         ],
@@ -125,7 +143,16 @@ def test_dedup_and_locations(tmp_path):
 
 def test_edges_externals_and_includes(tmp_path):
     g = build_graph(make_run(tmp_path))
-    assert g.rels["CALLS"] == [{"a": "f", "b": "ext::g", "n": 3}]  # max over TUs
+    assert g.rels["CALLS"] == [
+        {
+            "a": "f",
+            "b": "ext::g",
+            "n": 3,  # max over TUs
+            "sites": ["src/App/Doc.cpp:41:5", "src/App/Doc.cpp:42:5", "src/App/Doc.cpp:43:9"],
+        }
+    ]
+    assert g.rels["OVERRIDES"] == [{"a": "f", "b": "Base::f"}]  # deduped across TUs
+    assert g.externals["Base::f"]["name"] == "B::f"
     assert g.externals["ext::g"]["name"] == "std::g"
     assert g.rels["INHERITS"] == [{"a": "C", "b": "Base", "access": "public"}]
     assert g.rels["INCLUDES"] == [{"a": "src/App/Doc.cpp", "b": "src/App/Doc.h"}]
