@@ -6,13 +6,13 @@ Status and plan, 2026-11-27. The graph model itself is documented in
 Goal: use the graph to plan, apply, check and record small, reviewed refactoring and enhancement
 edits to FreeCAD, one at a time, with the human deciding at each step.
 
-## 1. Schema 0.1 at a glance
+## 1. Schema 0.2 at a glance
 
 - Nodes: `Module` (workbench/area), `File` (with git churn), `Symbol` + kind label
   (`Function`, `Class`, `Field`, `Variable`, `Type`, `Enum`, `Namespace`; key: libclang USR),
   `Symbol:External` (Qt, OpenCASCADE, std, Boost targets), `PyModule`/`PyClass`/`PyFunc`,
   `PyExternal`, `Run`.
-- Relationships: `CALLS {n}`, `USES_TYPE`, `INHERITS {access}`, `CONTAINS`, `DECLARED_IN`,
+- Relationships: `CALLS {n, sites}`, `OVERRIDES`, `USES_TYPE`, `INHERITS {access}`, `CONTAINS`, `DECLARED_IN`,
   `INCLUDES`, `CO_CHANGED {n}`, `IMPORTS {how, names}`.
 - Test code: `File.test`, `Symbol.test` (C++ under `tests/`).
 - Draw it: `CALL db.schema.visualization()` in the Browser (query 01).
@@ -64,9 +64,10 @@ Exploring (now):
       Community Edition has no roles, so keep it on the NUC only)
 
 Schema for editing (next, in order of value):
-- [ ] Call sites with positions (file, line, column per call), not just counts
-- [ ] `OVERRIDES` edges (virtual methods); needs the bindings' overridden-cursor access or a
-      USR/signature match
+- [x] Call sites with positions: `CALLS.sites` ("file:line:col", max 200 per edge); schema 0.2,
+      run 2026-11-27: 434,072 edges, 718,468 sites (queries 18, 19)
+- [x] `OVERRIDES` edges via libclang's clang_getOverriddenCursors (ctypes): 24,816 (16,281 to
+      FreeCAD methods, 8,535 to Qt/OCC/std); queries 17, 19, 20
 - [ ] Python-to-C++ binding links: `*Py.xml` -> generated `*PyImp.cpp` wrappers -> C++ methods
 - [ ] Macro usage (PROPERTY_HEADER, TYPESYSTEM_*, ...): expansion sites as edges
 - [ ] Keep runs side by side instead of wiping (run id on facts), and a graph diff between runs

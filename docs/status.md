@@ -78,3 +78,10 @@
 Plan and to-do list: `docs/explore-and-refactor.md`. Done: starter queries (`queries/`, checked
 by `cg-check-queries`), official Neo4j MCP server (read-only) via `.mcp.json`. APOC deployed; the
 MCP server answers with `get-schema` and `read-cypher`.
+
+## Schema 0.2 run (2026-11-27)
+- Run `2026-11-27-freecad-226841e6cd` (same FreeCAD rev): 2,167 TUs in 1.14 h, 0 failed, 925 MB;
+  python.jsonl/git.jsonl copied from the 2026-11-26 run. Loaded in 1.2 min: 135,200 symbols
+  (+45,955 external), 434,072 CALLS with 718,468 call sites, 24,816 OVERRIDES.
+- Most-overridden: Gui::Command::activated (694), isActive (661), Base::BaseClass::getPyObject (111).
+- `cg-check-queries`: 20/20. The 2026-11-26 run can be deleted.

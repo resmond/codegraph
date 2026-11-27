@@ -1,8 +1,9 @@
 # Cypher queries
 
-`starter/`: 16 read-only queries for getting to know the graph (schema, callers/callees, class
+`starter/`: 20 read-only queries for getting to know the graph (schema, callers/callees, class
 hierarchy, members, workbench coupling, hotspots, untested complex code, tests for a function,
-change impact, include fan-in, git co-change, Python importers).
+change impact, include fan-in, git co-change, Python importers; schema 0.2: overriders,
+call sites for an edit list, callers through virtual dispatch, override chains).
 
 Each file starts with a `// title` comment; queries that need an input take it from the first
 `WITH '...' AS name` line, so edit that value and run.
